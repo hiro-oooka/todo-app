@@ -1,31 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { addTodo, toggleTodo, deleteTodo } from '../actions'
+import type { Todo } from '../lib/supabase'
 
-type Todo = {
-  id: number
-  text: string
-  completed: boolean
-}
-
-export default function TodoApp() {
-  const [todos, setTodos] = useState<Todo[]>([])
+export default function TodoApp({ initialTodos }: { initialTodos: Todo[] }) {
   const [input, setInput] = useState('')
+  const [isPending, startTransition] = useTransition()
 
-  const addTodo = () => {
+  const handleAdd = () => {
     if (!input.trim()) return
-    setTodos([...todos, { id: Date.now(), text: input.trim(), completed: false }])
-    setInput('')
-  }
-
-  const toggleTodo = (id: number) => {
-    setTodos(todos.map(todo =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    ))
-  }
-
-  const deleteTodo = (id: number) => {
-    setTodos(todos.filter(todo => todo.id !== id))
+    startTransition(async () => {
+      await addTodo(input.trim())
+      setInput('')
+    })
   }
 
   return (
@@ -38,35 +26,37 @@ export default function TodoApp() {
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && addTodo()}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
             placeholder="タスクを入力..."
             className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            disabled={isPending}
           />
           <button
-            onClick={addTodo}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            onClick={handleAdd}
+            disabled={isPending}
+            className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             追加
           </button>
         </div>
 
-        {todos.length === 0 ? (
+        {initialTodos.length === 0 ? (
           <p className="text-center text-gray-400 text-sm">タスクがありません</p>
         ) : (
           <ul className="space-y-2">
-            {todos.map(todo => (
+            {initialTodos.map(todo => (
               <li key={todo.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 group">
                 <input
                   type="checkbox"
                   checked={todo.completed}
-                  onChange={() => toggleTodo(todo.id)}
+                  onChange={() => startTransition(() => toggleTodo(todo.id, !todo.completed))}
                   className="w-4 h-4 accent-blue-500 cursor-pointer"
                 />
                 <span className={`flex-1 text-sm ${todo.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
                   {todo.text}
                 </span>
                 <button
-                  onClick={() => deleteTodo(todo.id)}
+                  onClick={() => startTransition(() => deleteTodo(todo.id))}
                   className="text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 text-lg leading-none"
                 >
                   ×
@@ -76,9 +66,9 @@ export default function TodoApp() {
           </ul>
         )}
 
-        {todos.length > 0 && (
+        {initialTodos.length > 0 && (
           <p className="text-xs text-gray-400 text-right mt-4">
-            {todos.filter(t => t.completed).length} / {todos.length} 完了
+            {initialTodos.filter(t => t.completed).length} / {initialTodos.length} 完了
           </p>
         )}
       </div>
