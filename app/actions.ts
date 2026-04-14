@@ -5,9 +5,7 @@ import { createSupabaseClient } from './lib/supabase'
 
 export async function addTodo(text: string) {
   const supabase = createSupabaseClient()
-  console.log('SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
-  const { data, error } = await supabase.from('todos').insert({ text }).select()
-  console.log('insert data:', JSON.stringify(data), '| error:', error?.message ?? 'none')
+  await supabase.from('todos').insert({ text })
   refresh()
 }
 
