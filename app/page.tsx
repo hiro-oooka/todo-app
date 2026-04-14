@@ -1,6 +1,8 @@
 import { createSupabaseClient } from './lib/supabase'
 import TodoApp from './components/TodoApp'
 
+export const dynamic = 'force-dynamic'
+
 export default async function Home() {
   const supabase = createSupabaseClient()
   const { data: todos, error } = await supabase
